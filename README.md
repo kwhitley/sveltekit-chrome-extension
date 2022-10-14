@@ -9,7 +9,8 @@
 ![screenshot of SvelteKit-powered extension popup](./screenshot.png)
 
 ## Commands
-1. `yarn dev` - automatically rebuilds extension on detected changes.  Not quite HMR, but close enough.
+
+1. `yarn dev` - automatically rebuilds extension on detected changes. Not quite HMR, but close enough.
 2. `yarn build` - production release (runs format, lint, and test beforehand)
 
 ## What's here?
