@@ -1,7 +1,14 @@
 import * as fs from 'node:fs/promises'
+import * as fsSync from 'node:fs'
 import * as path from 'node:path'
 import { sveltekit } from '@sveltejs/kit/vite'
 import { build, defineConfig, type Plugin, type UserConfig, type ResolvedConfig } from 'vite'
+
+// these files will be processed independently
+const EXTENSION_SCRIPTS = [
+  'src/scripts/background.ts',
+  'src/scripts/inject.ts',
+]
 
 type ExtensionManifestPluginOptions = {
   manifest?: string
@@ -47,33 +54,21 @@ function extensionManifestPlugin(options?: ExtensionManifestPluginOptions): Plug
   }
 }
 
-type ExtensionWorkerPluginOptions = {
-  worker?: string
-}
-function extensionWorkerPlugin(options?: ExtensionWorkerPluginOptions): Plugin {
-  const opts = {
-    worker: 'src/worker.ts',
-    ...options
-  }
+function extensionScriptPlugin(pathname: string): Plugin {
   let config: ResolvedConfig
+  const shortName: string = pathname.replace(/^.*\/([^\/]+)\.\w{2,3}$/, '$1')
+
   return {
-    name: 'extension-worker',
+    name: 'extension-script',
     enforce: 'post',
     configResolved(c) {
       config = c
     },
     closeBundle: async () => {
-      // we want to run _after_ SvelteKit's adapter runs successfully
-      // SvelteKit writes to .svelte-kit on `writeBundle`, and the adapter runs on `closeBundle`
-      // we enforce this plugin on `post` to run after SvelteKit
-      // https://github.com/sveltejs/kit/blob/master/packages/kit/src/exports/vite/index.js#L471
-      if (config.build.ssr || config.mode !== 'production') {
-        // checking `config.mode` is production may not be the best approach, but we do not want to execute this build in `test` mode (from Vitest)
-        return
-      }
+      if (config.build.ssr || config.mode !== 'production') return
 
       const outDir = path.join(config.root, 'build')
-      const worker: UserConfig = {
+      const script: UserConfig = {
         root: config.root,
         define: {
           ...(config.define || {})
@@ -87,20 +82,15 @@ function extensionWorkerPlugin(options?: ExtensionWorkerPluginOptions): Plugin {
           ssr: true,
           rollupOptions: {
             input: {
-              worker: path.join(config.root, opts.worker)
+              [shortName]: path.join(config.root, pathname)
             },
-            external: []
-            // output: {
-            //   inlineDynamicImports: false,
-            //   preserveModules: true,
-            //   preserveModulesRoot: 'src',
-            // },
+            external: [],
           }
         }
       }
 
       try {
-        await build(worker)
+        await build(script)
       } catch (error) {
         throw new Error(`There was an error building the worker: ${error.message}`)
       }
@@ -109,5 +99,9 @@ function extensionWorkerPlugin(options?: ExtensionWorkerPluginOptions): Plugin {
 }
 
 export default defineConfig({
-  plugins: [sveltekit(), extensionManifestPlugin(), extensionWorkerPlugin()]
+  plugins: [
+    sveltekit(),
+    extensionManifestPlugin(),
+    ...EXTENSION_SCRIPTS.map(file => extensionScriptPlugin(file))
+  ]
 })

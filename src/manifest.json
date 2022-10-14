@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/chrome-manifest",
-  "name": "sveltekit-chrome-extension",
+  "name": "kwhitley/sveltekit-chrome-extension",
   "description": "My SvelteKit Chrome Extension",
   "version": "0.1",
   "manifest_version": 3,
