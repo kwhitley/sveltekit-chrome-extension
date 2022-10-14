@@ -6,7 +6,7 @@ import { build, defineConfig, type Plugin, type UserConfig, type ResolvedConfig 
 
 // these files will be processed independently
 const EXTENSION_SCRIPTS = [
-  'src/scripts/background.ts',
+  'src/scripts/worker.ts',
   'src/scripts/inject.ts',
 ]
 
@@ -82,7 +82,7 @@ function extensionScriptPlugin(pathname: string): Plugin {
           ssr: true,
           rollupOptions: {
             input: {
-              [shortName]: path.join(config.root, pathname)
+              [`scripts/${shortName}`]: path.join(config.root, pathname)
             },
             external: [],
           }

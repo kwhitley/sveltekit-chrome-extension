@@ -4,6 +4,10 @@
 
 <!-- MARKUP -->
 <div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/nested">Nested</a>
+  </nav>
   <slot />
 </div>
 
